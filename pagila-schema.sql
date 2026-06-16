@@ -1,251 +1,213 @@
-﻿--
--- PostgreSQL database dump
---
+/*******************************************************************************
+   Create Tables
+********************************************************************************/
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE DOMAIN public."bigint" AS bigint;
-
-CREATE TYPE public.mpaa_rating AS ENUM (
-    'G',
-    'PG',
-    'PG-13',
-    'R',
-    'NC-17'
-);
-
-CREATE DOMAIN public.year AS integer
-	CONSTRAINT year_check CHECK (((VALUE >= 1901) AND (VALUE <= 2155)));
-
-CREATE SEQUENCE public.customer_customer_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
+-- CUSTOMER
 CREATE TABLE public.customer (
-    customer_id integer DEFAULT nextval('public.customer_customer_id_seq'::regclass) NOT NULL,
-    store_id integer NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    email text,
-    address_id integer NOT NULL,
-    activebool boolean DEFAULT true NOT NULL,
-    create_date date DEFAULT CURRENT_DATE NOT NULL,
-    last_update timestamp with time zone DEFAULT now(),
-    active integer
+    customer_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(30) NOT NULL, 
+    last_name VARCHAR(30) NOT NULL,
+    email VARCHAR(60),
+    active boolean DEFAULT true NOT NULL,
+    address_id INT NOT NULL
 );
 
-CREATE SEQUENCE public.actor_actor_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- ACTOR
 CREATE TABLE public.actor (
-    actor_id integer DEFAULT nextval('public.actor_actor_id_seq'::regclass) NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    actor_id SERIAL PRIMARY KEY, 
+    first_name varchar(30) NOT NULL,
+    last_name varchar(30) NOT NULL
 );
 
-CREATE SEQUENCE public.category_category_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- CATEGORY
 CREATE TABLE public.category (
-    category_id integer DEFAULT nextval('public.category_category_id_seq'::regclass) NOT NULL,
-    name text NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    category_id SERIAL PRIMARY KEY,
+    name varchar(120) NOT NULL
 );
 
-CREATE SEQUENCE public.film_film_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- FILM
 CREATE TABLE public.film (
-    film_id integer DEFAULT nextval('public.film_film_id_seq'::regclass) NOT NULL,
-    title text NOT NULL,
+    film_id SERIAL PRIMARY KEY,
+    title varchar(200) NOT NULL,
     description text,
-    release_year public.year,
-    language_id varchar(2) NOT NULL,
-    original_language_id varchar(2),
-    rental_duration smallint DEFAULT 3 NOT NULL,
-    rental_rate numeric(4,2) DEFAULT 4.99 NOT NULL,
-    length smallint,
-    replacement_cost numeric(5,2) DEFAULT 19.99 NOT NULL,
-    rating public.mpaa_rating DEFAULT 'G'::public.mpaa_rating,
-    last_update timestamp with time zone DEFAULT now() NOT NULL,
-    special_features text[],
-    fulltext tsvector NOT NULL
+    release_year INT,
+    length_minutes INT,
+    language_id varchar(2) NOT NULL
 );
 
-CREATE TABLE public.film_actor (
-    actor_id integer NOT NULL,
-    film_id integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
-);
-
-CREATE TABLE public.film_category (
-    film_id integer NOT NULL,
-    category_id integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
-);
-
-CREATE SEQUENCE public.address_address_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- ADDRESS
 CREATE TABLE public.address (
-    address_id integer DEFAULT nextval('public.address_address_id_seq'::regclass) NOT NULL,
-    address text NOT NULL,
-    address2 text,
-    district text NOT NULL,
-    city_id integer NOT NULL,
-    postal_code text,
-    phone text NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    address_id SERIAL PRIMARY KEY,
+    address VARCHAR(70) NOT NULL,
+    district VARCHAR(40) NOT NULL,
+    postal_code VARCHAR(30) NOT NULL,
+    city_id INT NOT NULL
 );
 
-CREATE SEQUENCE public.city_city_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- CITY
 CREATE TABLE public.city (
-    city_id integer DEFAULT nextval('public.city_city_id_seq'::regclass) NOT NULL,
-    city text NOT NULL,
-    country_code integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    city_id SERIAL PRIMARY KEY,
+    city VARCHAR(50) NOT NULL,
+    country_code INT NOT NULL
 );
 
+-- COUNTRY
 CREATE TABLE public.country (
-    country_code integer PRIMARY KEY,
-    name text NOT NULL,
+    country_code INT PRIMARY KEY,
+    name VARCHAR(40) NOT NULL,
     alpha_2 character(2),
     alpha_3 character(3),
-    iso_3166_2 text,
-    region text,
-    sub_region text,
-    intermediate_region text,
-    region_code integer,
-    sub_region_code integer,
-    intermediate_region_code integer
+    region VARCHAR(40),
+    sub_region VARCHAR(40),
+    intermediate_region VARCHAR(40),
+    region_code INT,
+    sub_region_code INT,
+    intermediate_region_code INT
 );
 
-CREATE SEQUENCE public.inventory_inventory_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- INVENTORY
 CREATE TABLE public.inventory (
-    inventory_id integer DEFAULT nextval('public.inventory_inventory_id_seq'::regclass) NOT NULL,
-    film_id integer NOT NULL,
-    store_id integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
-);
+    inventory_id SERIAL PRIMARY KEY,
+    unit_price NUMERIC(10,2) NOT NULL,
+    film_id INT NOT NULL,
+    store_id INT NOT NULL
+    );
 
+-- LANGUAGE
 CREATE TABLE public.language (
     language_id varchar(2) PRIMARY KEY,
-    name text NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    name text NOT NULL
 );
 
-CREATE SEQUENCE public.payment_payment_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- PAYMENT
 CREATE TABLE public.payment (
-    payment_id integer DEFAULT nextval('public.payment_payment_id_seq'::regclass) NOT NULL,
-    customer_id integer NOT NULL,
-    staff_id integer NOT NULL,
-    rental_id integer NOT NULL,
-    amount numeric(5,2) NOT NULL,
-    payment_date timestamp with time zone NOT NULL,
-    PRIMARY KEY (payment_date, payment_id)
+    payment_id SERIAL PRIMARY KEY,
+    amount numeric(10,2) NOT NULL,
+    payment_date timestamp NOT NULL,
+    staff_id INT NOT NULL
 );
 
-CREATE SEQUENCE public.rental_rental_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- RENTAL
 CREATE TABLE public.rental (
-    rental_id integer DEFAULT nextval('public.rental_rental_id_seq'::regclass) NOT NULL,
-    rental_date timestamp with time zone NOT NULL,
-    inventory_id integer NOT NULL,
-    customer_id integer NOT NULL,
-    return_date timestamp with time zone,
-    staff_id integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    rental_id SERIAL PRIMARY KEY,
+    rental_date timestamp NOT NULL,
+    return_date timestamp,
+    customer_id INT NOT NULL,
+    payment_id INT NOT NULL,
+    staff_id INT NOT NULL
 );
 
-CREATE SEQUENCE public.staff_staff_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- STAFF
 CREATE TABLE public.staff (
-    staff_id integer DEFAULT nextval('public.staff_staff_id_seq'::regclass) NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    address_id integer NOT NULL,
-    email text,
-    store_id integer NOT NULL,
+    staff_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(30) NOT NULL,
+    last_name VARCHAR(30) NOT NULL,
+    email VARCHAR(60),
     active boolean DEFAULT true NOT NULL,
-    username text NOT NULL,
-    password text,
-    last_update timestamp with time zone DEFAULT now() NOT NULL,
-    picture bytea
+    username VARCHAR(30), 
+    password VARCHAR(70),
+    picture bytea,
+    address_id INT NOT NULL,
+    store_id INT NOT NULL
 );
 
-CREATE SEQUENCE public.store_store_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
+-- STORE
 CREATE TABLE public.store (
-    store_id integer DEFAULT nextval('public.store_store_id_seq'::regclass) NOT NULL,
-    manager_staff_id integer NOT NULL,
-    address_id integer NOT NULL,
-    last_update timestamp with time zone DEFAULT now() NOT NULL
+    store_id SERIAL PRIMARY KEY,
+    address_id INT NOT NULL,
+    manager_id INT NOT NULL
 );
+
+-- FILM_ACTOR
+CREATE TABLE public.film_actor(
+    actor_id INT NOT NULL,
+    film_id INT NOT NULL,
+    CONSTRAINT film_actor_pkey PRIMARY KEY  (film_id, actor_id)
+);
+
+-- FILM_CATEGORY
+CREATE TABLE public.film_category(
+    film_id INT NOT NULL,
+    category_id INT NOT NULL,
+    CONSTRAINT film_category_pkey PRIMARY KEY  (film_id, category_id)
+);
+
+
+-- RENTAL_INVENTORY
+CREATE TABLE public.rental_inventory(
+    inventory_id INT NOT NULL,
+    rental_id INT NOT NULL,
+    CONSTRAINT rental_inventory_pkey PRIMARY KEY  (rental_id,inventory_id)
+);
+
+
+/*******************************************************************************
+    Create Foreign Keys and associated Indexes
+********************************************************************************/
+
+-- FILM_ACTOR
+ALTER TABLE film_actor ADD CONSTRAINT film_actor_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES actor (actor_id);
+CREATE INDEX idx_fk_film_actor_actor_id ON public.film_actor(actor_id);
+ALTER TABLE film_actor ADD CONSTRAINT film_actor_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
+CREATE INDEX idx_fk_film_actor_film_id ON public.film_actor(film_id);
+
+-- FILM_CATEGORY
+ALTER TABLE film_category ADD CONSTRAINT film_category_category_id_fkey FOREIGN KEY (category_id) REFERENCES category (category_id);
+CREATE INDEX idx_fk_film_category_category_id ON public.film_category(category_id);
+ALTER TABLE film_category ADD CONSTRAINT film_category_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
+CREATE INDEX idx_fk_film_category_film_id ON public.film_category(film_id);
+
+-- RENTAL_INVENTORY
+ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_inventory_id_fkey FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);
+CREATE INDEX idx_fk_rental_inventory_inventory_id ON public.rental_inventory(inventory_id);
+ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_rental_id_fkey FOREIGN KEY (rental_id) REFERENCES rental (rental_id);
+CREATE INDEX idx_fk_rental_inventory_rental_id ON public.rental_inventory(rental_id);
+
+-- CUSTOMER
+ALTER TABLE customer ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
+CREATE INDEX idx_fk_customer_address_id ON public.customer(address_id);
+
+-- RENTAL
+ALTER TABLE rental ADD CONSTRAINT rental_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES payment (payment_id);
+CREATE INDEX idx_fk_rental_payment_id ON public.rental(payment_id);
+ALTER TABLE rental ADD CONSTRAINT rental_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
+CREATE INDEX idx_fk_rental_staff_id ON public.rental(staff_id);
+ALTER TABLE rental ADD CONSTRAINT rental_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id);
+CREATE INDEX idx_fk_rental_customer_id ON public.rental(customer_id);
+
+-- INVENTORY
+ALTER TABLE inventory ADD CONSTRAINT inventory_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
+CREATE INDEX idx_fk_inventory_store_id ON public.inventory(store_id);
+ALTER TABLE inventory ADD CONSTRAINT inventory_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
+CREATE INDEX idx_fk_inventory_film_id ON public.inventory(film_id);
+
+-- STAFF
+ALTER TABLE staff ADD CONSTRAINT staff_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
+CREATE INDEX idx_fk_staff_address_id ON public.staff(address_id);
+ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
+CREATE INDEX idx_fk_staff_store_id ON public.staff(store_id);
+
+-- PAYMENT
+ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
+CREATE INDEX idx_fk_payment_staff_id ON public.payment(staff_id);
+
+-- STORE
+ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
+CREATE INDEX idx_fk_store_address_id ON public.store(address_id);
+ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id);
+CREATE INDEX idx_fk_store_manager_id ON public.store(manager_id);
+
+-- ADDRESS
+ALTER TABLE address ADD CONSTRAINT address_city_id_fkey FOREIGN KEY (city_id) REFERENCES city (city_id);
+CREATE INDEX idx_fk_address_city_id ON public.address(city_id);
+
+-- CITY
+ALTER TABLE city ADD CONSTRAINT city_country_code_fkey FOREIGN KEY (country_code) REFERENCES country (country_code);
+CREATE INDEX idx_fk_city_country_code ON public.city(country_code);
+
+-- FILM
+ALTER TABLE film ADD CONSTRAINT film_language_id_fkey FOREIGN KEY (language_id) REFERENCES language (language_id);
+CREATE INDEX idx_fk_film_language_id ON public.film(language_id);
+
 
 
