@@ -116,11 +116,19 @@ def main_languages(languages: list[tuple[str, str]]) -> list[tuple[str, str]]:
 
 def load_countries(path: str) -> list[dict[str, str]]:
     with open(path, "r", encoding="utf-8-sig", newline="") as handle:
-        countries = list(csv.DictReader(handle))
+        countries = [
+            row
+            for row in csv.DictReader(handle)
+            if row["country-code"].strip()
+            and row["name"].strip()
+            and row["region-code"].strip()
+            and row["region"].strip()
+        ]
 
     if len(countries) < COUNTRY_COUNT:
         raise SystemExit(
-            f"{path} tiene {len(countries)} paises, se necesitan {COUNTRY_COUNT}."
+            f"{path} tiene {len(countries)} paises con region valida; "
+            f"se necesitan {COUNTRY_COUNT}."
         )
 
     return countries[:COUNTRY_COUNT]
