@@ -8,7 +8,6 @@ CREATE TABLE public.customer (
     first_name VARCHAR(30) NOT NULL, 
     last_name VARCHAR(30) NOT NULL,
     email VARCHAR(60),
-    phone VARCHAR(30),
     active boolean DEFAULT true NOT NULL,
     address_id INT NOT NULL
 );
@@ -19,7 +18,6 @@ CREATE TABLE public.staff (
     first_name VARCHAR(30) NOT NULL,
     last_name VARCHAR(30) NOT NULL,
     email VARCHAR(60),
-    phone VARCHAR(30),
     active boolean DEFAULT true NOT NULL,
     username VARCHAR(30), 
     password VARCHAR(70),
@@ -62,7 +60,7 @@ CREATE TABLE public.store (
     store_id SERIAL PRIMARY KEY,
     address_id INT NOT NULL,
     manager_id INT NOT NULL,
-    phone VARCHAR(30)
+    email VARCHAR(60)
 );
 
 -- INVENTORY
