@@ -46,7 +46,7 @@ CATEGORY_NAMES = [
     "Adventure",
 ]
 MAIN_LANGUAGE_CODES = ("en", "es", "fr", "de", "it", "pt")
-PAYMENT_METHODS = ("Mercado Pago", "Efectivo", "Debito", "Credito")
+PAYMENT_METHODS = ("Billetera Virtual", "Efectivo", "Debito", "Credito")
 
 
 fake = Faker("es_AR")
@@ -173,11 +173,6 @@ def main() -> None:
     staff_address_ids = address_ids[CUSTOMER_COUNT : CUSTOMER_COUNT + STAFF_COUNT]
     store_address_ids = address_ids[CUSTOMER_COUNT + STAFF_COUNT :]
 
-    rental_customer_ids = []
-    rental_staff_ids = []
-    rental_dates = []
-    rental_inventory_ids = []
-
     with open(output, "w", encoding="utf-8", newline="\n") as handle:
         handle.write("-- Datos generados por generar_pagila_faker.py para pagila-schema.sql\n")
         handle.write("-- Ejecutar luego de crear el esquema.\n\n")
@@ -286,11 +281,12 @@ def main() -> None:
         write_insert(
             handle,
             "store",
-            ("store_id", "address_id", "manager_id"),
+            ("store_id", "address_id","email", "manager_id"),
             (
                 (
                     str(store_id),
                     str(store_address_ids[store_id - 1]),
+                    sql_text(fake.unique.email()[:60]),
                     str(((store_id - 1) % STAFF_COUNT) + 1),
                 )
                 for store_id in range(1, STORE_COUNT + 1)
@@ -381,19 +377,30 @@ def main() -> None:
             film_actor_rows,
         )
 
+        inventory_rows = []
+        inventory_prices: dict[int, Decimal] = {}
+        inventory_by_store: dict[int, list[int]] = {
+            store_id: [] for store_id in range(1, STORE_COUNT + 1)
+        }
+        for inventory_id in range(1, INVENTORY_COUNT + 1):
+            unit_price = money("2.99", "29.99")
+            store_id = random.randint(1, STORE_COUNT)
+            inventory_prices[inventory_id] = unit_price
+            inventory_by_store[store_id].append(inventory_id)
+            inventory_rows.append(
+                (
+                    str(inventory_id),
+                    f"{unit_price:.2f}",
+                    str(random.randint(1, FILM_COUNT)),
+                    str(store_id),
+                )
+            )
+
         write_insert(
             handle,
             "inventory",
             ("inventory_id", "unit_price", "film_id", "store_id"),
-            (
-                (
-                    str(inventory_id),
-                    f"{money('2.99', '29.99'):.2f}",
-                    str(random.randint(1, FILM_COUNT)),
-                    str(random.randint(1, STORE_COUNT)),
-                )
-                for inventory_id in range(1, INVENTORY_COUNT + 1)
-            ),
+            inventory_rows,
         )
 
         payment_rows = []
@@ -413,24 +420,20 @@ def main() -> None:
         for rental_id in range(1, RENTAL_COUNT + 1):
             customer_id = random.randint(1, CUSTOMER_COUNT)
             staff_id = random.randint(1, STAFF_COUNT)
+            store_id = ((staff_id - 1) % STORE_COUNT) + 1
             rental_date = start_date + timedelta(
                 minutes=random.randint(0, 60 * 24 * 365 * 3) # 2023 a 2026
             )
             return_date = rental_date + timedelta(days=random.randint(1, 14))
-            inventory_id = random.randint(1, INVENTORY_COUNT)
-            rental_customer_ids.append(customer_id)
-            rental_staff_ids.append(staff_id)
-            rental_dates.append(rental_date)
-            rental_inventory_ids.append(inventory_id)
-            payment_rows.append(
-                (
-                    str(rental_id),
-                    f"{money('2.99', '29.99'):.2f}",
-                    sql_ts(rental_date + timedelta(minutes=random.randint(0, 90))),
-                    str(staff_id),
-                    str(random.randint(1, len(PAYMENT_METHODS))),
-                )
+            rented_inventory_ids = random.sample(
+                inventory_by_store[store_id],
+                random.randint(1, 5),
             )
+            amount = sum(
+                (inventory_prices[inventory_id] for inventory_id in rented_inventory_ids),
+                Decimal("0.00"),
+            )
+
             rental_rows.append(
                 (
                     str(rental_id),
@@ -441,14 +444,19 @@ def main() -> None:
                     str(staff_id),
                 )
             )
-            rental_inventory_rows.append((str(inventory_id), str(rental_id)))
-
-        write_insert(
-            handle,
-            "payment",
-            ("payment_id", "amount", "payment_date", "staff_id", "pay_method_id"),
-            payment_rows,
-        )
+            rental_inventory_rows.extend(
+                (str(inventory_id), str(rental_id))
+                for inventory_id in rented_inventory_ids
+            )
+            payment_rows.append(
+                (
+                    str(rental_id),
+                    f"{amount:.2f}",
+                    sql_ts(rental_date + timedelta(minutes=random.randint(0, 90))),
+                    str(staff_id),
+                    str(random.randint(1, len(PAYMENT_METHODS))),
+                )
+            )
 
         write_insert(
             handle,
@@ -462,6 +470,13 @@ def main() -> None:
             "rental_inventory",
             ("inventory_id", "rental_id"),
             rental_inventory_rows,
+        )
+
+        write_insert(
+            handle,
+            "payment",
+            ("payment_id", "amount", "payment_date", "staff_id", "pay_method_id"),
+            payment_rows,
         )
 
         for table, column, value in (
