@@ -78,12 +78,14 @@ CREATE TABLE public.payment (
     payment_date timestamp NOT NULL,
     staff_id INT NOT NULL,
     pay_method_id INT NOT NULL
+    pay_method_id INT NOT NULL
 
 );
 
 -- PAY METHOD
 CREATE TABLE public.pay_method (
     pay_method_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
     name VARCHAR(50) NOT NULL
 );
 
@@ -103,6 +105,7 @@ CREATE TABLE public.address (
     postal_code VARCHAR(30) NOT NULL,
     number INT,
     floor INT, 
+    unit_number varchar(10),
     unit_number varchar(10),
     street_id INT NOT NULL
 );
@@ -173,9 +176,11 @@ ALTER TABLE film_actor ADD CONSTRAINT film_actor_film_id_fkey FOREIGN KEY (film_
 ALTER TABLE film_category ADD CONSTRAINT film_category_category_id_fkey FOREIGN KEY (category_id) REFERENCES category (category_id);
 ALTER TABLE film_category ADD CONSTRAINT film_category_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
 
+
 -- RENTAL_INVENTORY
 ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_inventory_id_fkey FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);
 ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_rental_id_fkey FOREIGN KEY (rental_id) REFERENCES rental (rental_id);
+
 
 -- CUSTOMER
 ALTER TABLE customer ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
@@ -195,6 +200,7 @@ ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFE
 
 -- PAYMENT
 ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
+ALTER TABLE payment ADD CONSTRAINT payment_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
 
 -- PAY METHOD
 ALTER TABLE payment ADD CONSTRAINT pay_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
@@ -203,17 +209,21 @@ ALTER TABLE payment ADD CONSTRAINT pay_method_id_fkey FOREIGN KEY (pay_method_id
 ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
 ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id);
 
+
 -- ADDRESS
 ALTER TABLE address ADD CONSTRAINT address_street_id_fkey FOREIGN KEY (street_id) REFERENCES street (street_id);
 
 -- STREET
 ALTER TABLE street ADD CONSTRAINT street_city_id_fkey FOREIGN KEY (city_id) REFERENCES city (city_id);
 
+
 -- CITY
 ALTER TABLE city ADD CONSTRAINT city_country_code_fkey FOREIGN KEY (country_code) REFERENCES country (country_code);
 
+
 -- COUNTRY
 ALTER TABLE country ADD CONSTRAINT country_region_code_fkey FOREIGN KEY (region_code) REFERENCES region (region_code);
+
 
 -- FILM
 ALTER TABLE film ADD CONSTRAINT film_language_id_fkey FOREIGN KEY (language_id) REFERENCES language (language_id);
