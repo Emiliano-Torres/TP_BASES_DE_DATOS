@@ -166,80 +166,58 @@ CREATE TABLE public.rental_inventory(
 
 -- FILM_ACTOR
 ALTER TABLE film_actor ADD CONSTRAINT film_actor_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES actor (actor_id);
-CREATE INDEX idx_fk_film_actor_actor_id ON public.film_actor(actor_id);
+
 ALTER TABLE film_actor ADD CONSTRAINT film_actor_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
-CREATE INDEX idx_fk_film_actor_film_id ON public.film_actor(film_id);
 
 -- FILM_CATEGORY
 ALTER TABLE film_category ADD CONSTRAINT film_category_category_id_fkey FOREIGN KEY (category_id) REFERENCES category (category_id);
-CREATE INDEX idx_fk_film_category_category_id ON public.film_category(category_id);
 ALTER TABLE film_category ADD CONSTRAINT film_category_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
-CREATE INDEX idx_fk_film_category_film_id ON public.film_category(film_id);
 
 -- RENTAL_INVENTORY
 ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_inventory_id_fkey FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);
-CREATE INDEX idx_fk_rental_inventory_inventory_id ON public.rental_inventory(inventory_id);
 ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_rental_id_fkey FOREIGN KEY (rental_id) REFERENCES rental (rental_id);
-CREATE INDEX idx_fk_rental_inventory_rental_id ON public.rental_inventory(rental_id);
 
 -- CUSTOMER
 ALTER TABLE customer ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-CREATE INDEX idx_fk_customer_address_id ON public.customer(address_id);
 
 -- RENTAL
 ALTER TABLE rental ADD CONSTRAINT rental_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES payment (payment_id);
-CREATE INDEX idx_fk_rental_payment_id ON public.rental(payment_id);
 ALTER TABLE rental ADD CONSTRAINT rental_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
-CREATE INDEX idx_fk_rental_staff_id ON public.rental(staff_id);
 ALTER TABLE rental ADD CONSTRAINT rental_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id);
-CREATE INDEX idx_fk_rental_customer_id ON public.rental(customer_id);
 
 -- INVENTORY
 ALTER TABLE inventory ADD CONSTRAINT inventory_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
-CREATE INDEX idx_fk_inventory_store_id ON public.inventory(store_id);
 ALTER TABLE inventory ADD CONSTRAINT inventory_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
-CREATE INDEX idx_fk_inventory_film_id ON public.inventory(film_id);
 
 -- STAFF
 ALTER TABLE staff ADD CONSTRAINT staff_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-CREATE INDEX idx_fk_staff_address_id ON public.staff(address_id);
 ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
-CREATE INDEX idx_fk_staff_store_id ON public.staff(store_id);
 
 -- PAYMENT
 ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
-CREATE INDEX idx_fk_payment_staff_id ON public.payment(staff_id);
 
 -- PAY METHOD
 ALTER TABLE pay_method ADD CONSTRAINT pay_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
-CREATE INDEX idx_fk_payment_staff_id ON public.payment(staff_id);
 
 
 -- STORE
 ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-CREATE INDEX idx_fk_store_address_id ON public.store(address_id);
 ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id);
-CREATE INDEX idx_fk_store_manager_id ON public.store(manager_id);
 
 -- ADDRESS
 ALTER TABLE address ADD CONSTRAINT address_street_id_fkey FOREIGN KEY (street_id) REFERENCES street (street_id);
-CREATE INDEX idx_fk_address_street_id ON public.address(street_id);
 
 -- STREET
 ALTER TABLE street ADD CONSTRAINT street_city_id_fkey FOREIGN KEY (city_id) REFERENCES city (city_id);
-CREATE INDEX idx_fk_street_city_id ON public.street(city_id);
 
 -- CITY
 ALTER TABLE city ADD CONSTRAINT city_country_code_fkey FOREIGN KEY (country_code) REFERENCES country (country_code);
-CREATE INDEX idx_fk_city_country_code ON public.city(country_code);
 
 -- COUNTRY
 ALTER TABLE country ADD CONSTRAINT country_region_code_fkey FOREIGN KEY (region_code) REFERENCES region (region_code);
-CREATE INDEX idx_fk_country_region_code ON public.coutry(region_code);
 
 -- FILM
 ALTER TABLE film ADD CONSTRAINT film_language_id_fkey FOREIGN KEY (language_id) REFERENCES language (language_id);
-CREATE INDEX idx_fk_film_language_id ON public.film(language_id);
 
 
 
