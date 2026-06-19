@@ -12,17 +12,25 @@ CREATE TABLE public.customer (
     address_id INT NOT NULL
 );
 
+-- STAFF
+CREATE TABLE public.staff (
+    staff_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(30) NOT NULL,
+    last_name VARCHAR(30) NOT NULL,
+    email VARCHAR(60),
+    active boolean DEFAULT true NOT NULL,
+    username VARCHAR(30), 
+    password VARCHAR(70),
+    picture bytea,
+    address_id INT NOT NULL,
+    store_id INT NOT NULL
+);
+
 -- ACTOR
 CREATE TABLE public.actor (
     actor_id SERIAL PRIMARY KEY, 
     first_name varchar(30) NOT NULL,
     last_name varchar(30) NOT NULL
-);
-
--- CATEGORY
-CREATE TABLE public.category (
-    category_id SERIAL PRIMARY KEY,
-    name varchar(120) NOT NULL
 );
 
 -- FILM
@@ -35,34 +43,23 @@ CREATE TABLE public.film (
     language_id varchar(2) NOT NULL
 );
 
--- ADDRESS
-CREATE TABLE public.address (
-    address_id SERIAL PRIMARY KEY,
-    address VARCHAR(70) NOT NULL,
-    district VARCHAR(40) NOT NULL,
-    postal_code VARCHAR(30) NOT NULL,
-    city_id INT NOT NULL
+-- CATEGORY
+CREATE TABLE public.category (
+    category_id SERIAL PRIMARY KEY,
+    name varchar(120) NOT NULL
 );
 
--- CITY
-CREATE TABLE public.city (
-    city_id SERIAL PRIMARY KEY,
-    city VARCHAR(50) NOT NULL,
-    country_code INT NOT NULL
+-- LANGUAGE
+CREATE TABLE public.language (
+    language_id varchar(2) PRIMARY KEY,
+    name text NOT NULL
 );
 
--- COUNTRY
-CREATE TABLE public.country (
-    country_code INT PRIMARY KEY,
-    name VARCHAR(40) NOT NULL,
-    alpha_2 character(2),
-    alpha_3 character(3),
-    region VARCHAR(40),
-    sub_region VARCHAR(40),
-    intermediate_region VARCHAR(40),
-    region_code INT,
-    sub_region_code INT,
-    intermediate_region_code INT
+-- STORE
+CREATE TABLE public.store (
+    store_id SERIAL PRIMARY KEY,
+    address_id INT NOT NULL,
+    manager_id INT NOT NULL
 );
 
 -- INVENTORY
@@ -72,12 +69,6 @@ CREATE TABLE public.inventory (
     film_id INT NOT NULL,
     store_id INT NOT NULL
     );
-
--- LANGUAGE
-CREATE TABLE public.language (
-    language_id varchar(2) PRIMARY KEY,
-    name text NOT NULL
-);
 
 -- PAYMENT
 CREATE TABLE public.payment (
@@ -97,25 +88,44 @@ CREATE TABLE public.rental (
     staff_id INT NOT NULL
 );
 
--- STAFF
-CREATE TABLE public.staff (
-    staff_id SERIAL PRIMARY KEY,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    email VARCHAR(60),
-    active boolean DEFAULT true NOT NULL,
-    username VARCHAR(30), 
-    password VARCHAR(70),
-    picture bytea,
-    address_id INT NOT NULL,
-    store_id INT NOT NULL
+-- ADDRESS
+CREATE TABLE public.address (
+    address_id SERIAL PRIMARY KEY,
+    postal_code VARCHAR(30) NOT NULL,
+    number INT,
+    floor INT, 
+    unit_number varchar(10)
+    street_id INT NOT NULL
 );
 
--- STORE
-CREATE TABLE public.store (
-    store_id SERIAL PRIMARY KEY,
-    address_id INT NOT NULL,
-    manager_id INT NOT NULL
+-- STREET
+CREATE TABLE public.street (
+    street_id SERIAL PRIMARY KEY,
+    name varchar(70) NOT NULL,
+    city_id int NOT NULL
+);
+
+-- CITY
+CREATE TABLE public.city (
+    city_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    country_code INT NOT NULL
+);
+
+-- COUNTRY
+CREATE TABLE public.country (
+    country_code INT PRIMARY KEY,
+    name VARCHAR(40) NOT NULL,
+    alpha_2 character(2),
+    alpha_3 character(3),
+    region_code INT NOT NULL
+
+);
+
+-- REGION
+CREATE TABLE public.region (
+    region_code INT PRIMARY KEY,
+    region VARCHAR(40)
 );
 
 -- FILM_ACTOR
@@ -198,16 +208,25 @@ ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) 
 CREATE INDEX idx_fk_store_manager_id ON public.store(manager_id);
 
 -- ADDRESS
-ALTER TABLE address ADD CONSTRAINT address_city_id_fkey FOREIGN KEY (city_id) REFERENCES city (city_id);
-CREATE INDEX idx_fk_address_city_id ON public.address(city_id);
+ALTER TABLE address ADD CONSTRAINT address_street_id_fkey FOREIGN KEY (street_id) REFERENCES street (street_id);
+CREATE INDEX idx_fk_address_street_id ON public.address(street_id);
+
+-- STREET
+ALTER TABLE street ADD CONSTRAINT street_city_id_fkey FOREIGN KEY (city_id) REFERENCES city (city_id);
+CREATE INDEX idx_fk_street_city_id ON public.street(city_id);
 
 -- CITY
 ALTER TABLE city ADD CONSTRAINT city_country_code_fkey FOREIGN KEY (country_code) REFERENCES country (country_code);
 CREATE INDEX idx_fk_city_country_code ON public.city(country_code);
 
+-- COUNTRY
+ALTER TABLE country ADD CONSTRAINT country_region_code_fkey FOREIGN KEY (region_code) REFERENCES region (region_code);
+CREATE INDEX idx_fk_country_region_code ON public.coutry(region_code);
+
 -- FILM
 ALTER TABLE film ADD CONSTRAINT film_language_id_fkey FOREIGN KEY (language_id) REFERENCES language (language_id);
 CREATE INDEX idx_fk_film_language_id ON public.film(language_id);
+
 
 
 
