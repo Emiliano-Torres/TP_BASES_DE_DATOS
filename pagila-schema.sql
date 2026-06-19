@@ -78,6 +78,7 @@ CREATE TABLE public.payment (
     payment_date timestamp NOT NULL,
     staff_id INT NOT NULL,
     pay_method_id INT NOT NULL
+
 );
 
 -- PAY METHOD
@@ -190,16 +191,17 @@ ALTER TABLE inventory ADD CONSTRAINT inventory_film_id_fkey FOREIGN KEY (film_id
 
 -- STAFF
 ALTER TABLE staff ADD CONSTRAINT staff_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
 
 -- PAYMENT
 ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
-ALTER TABLE payment ADD CONSTRAINT payment_pay_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
 
+-- PAY METHOD
+ALTER TABLE payment ADD CONSTRAINT pay_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
 
 -- STORE
 ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id);
 
 -- ADDRESS
 ALTER TABLE address ADD CONSTRAINT address_street_id_fkey FOREIGN KEY (street_id) REFERENCES street (street_id);
