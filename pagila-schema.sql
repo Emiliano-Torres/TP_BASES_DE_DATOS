@@ -78,14 +78,11 @@ CREATE TABLE public.payment (
     payment_date timestamp NOT NULL,
     staff_id INT NOT NULL,
     pay_method_id INT NOT NULL
-    pay_method_id INT NOT NULL
-
 );
 
 -- PAY METHOD
 CREATE TABLE public.pay_method (
     pay_method_id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
     name VARCHAR(50) NOT NULL
 );
 
@@ -93,7 +90,6 @@ CREATE TABLE public.pay_method (
 CREATE TABLE public.rental (
     rental_id SERIAL PRIMARY KEY,
     rental_date timestamp NOT NULL,
-    return_date timestamp,
     customer_id INT NOT NULL,
     payment_id INT NOT NULL,
     staff_id INT NOT NULL
@@ -105,7 +101,6 @@ CREATE TABLE public.address (
     postal_code VARCHAR(30) NOT NULL,
     number INT,
     floor INT, 
-    unit_number varchar(10),
     unit_number varchar(10),
     street_id INT NOT NULL
 );
@@ -201,9 +196,6 @@ ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFE
 -- PAYMENT
 ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
 ALTER TABLE payment ADD CONSTRAINT payment_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
-
--- PAY METHOD
-ALTER TABLE payment ADD CONSTRAINT pay_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
 
 -- STORE
 ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
