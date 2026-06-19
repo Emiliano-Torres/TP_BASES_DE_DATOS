@@ -10,4 +10,4 @@ docker cp pagila-schema.sql ${container}:/pagila-schema.sql
 docker cp pagila-insert-data.sql ${container}:/pagila-insert-data.sql
 
 docker exec -i $container psql -U $user -d $db -f /pagila-schema.sql
-docker exec -i $container psql -U $user -d $db -f /pagila-insert-data.sql
+docker exec -i $container psql -U $user -d $db -f /pagila-faker-test.sql
