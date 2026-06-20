@@ -1,2 +1,0 @@
--- Las claves foraneas fueron integradas en pagila-schema.sql.
--- Este archivo se conserva como referencia y no ejecuta DDL.
