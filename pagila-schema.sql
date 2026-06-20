@@ -59,28 +59,6 @@ CREATE TABLE public.language (
     name text NOT NULL
 );
 
--- FILM
-CREATE TABLE public.film (
-    film_id SERIAL PRIMARY KEY,
-    title varchar(200) NOT NULL,
-    description text,
-    release_year INT,
-    length_minutes INT,
-    language_id varchar(2) NOT NULL
-);
-
--- CATEGORY
-CREATE TABLE public.category (
-    category_id SERIAL PRIMARY KEY,
-    name varchar(120) NOT NULL
-);
-
--- LANGUAGE
-CREATE TABLE public.language (
-    language_id varchar(2) PRIMARY KEY,
-    name text NOT NULL
-);
-
 -- STORE
 CREATE TABLE public.store (
     store_id SERIAL PRIMARY KEY,
