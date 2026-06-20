@@ -84,6 +84,7 @@ CREATE TABLE public.payment (
     payment_date timestamp NOT NULL,
     staff_id INT NOT NULL,
     pay_method_id INT NOT NULL,
+    rental_id INT NOT NULL, 
     CONSTRAINT payment_amount_not_negative CHECK (amount >= 0)
 );
 
@@ -99,9 +100,8 @@ CREATE TABLE public.rental (
     rental_date timestamp NOT NULL,
     return_date timestamp NOT NULL,
     customer_id INT NOT NULL,
-    payment_id INT NOT NULL,
     staff_id INT NOT NULL,
-    CONSTRAINT rental_dates_coherent CHECK (return_date > rental_date)
+    CONSTRAINT rental_dates_coherent CHECK (return_date IS NULL OR return_date > rental_date)
 );
 
 -- ADDRESS
@@ -165,7 +165,4 @@ CREATE TABLE public.rental_inventory(
     rental_id INT NOT NULL,
     CONSTRAINT rental_inventory_pkey PRIMARY KEY  (rental_id,inventory_id)
 );
-
-
-
 
