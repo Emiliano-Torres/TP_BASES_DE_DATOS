@@ -41,6 +41,14 @@ count(pay_method_id) total_no_nulas,
 count(case when pay_method_id is null then 1 end) total_nulas,
 round(count(pay_method_id)*100.0/count(*),2) porcentaje_no_nulo,
 count (distinct pay_method_id) valores_distintos
+from payment
+union all
+select 'rental_id' nombre_columna,
+count(*) total_filas, 
+count(rental_id) total_no_nulas, 
+count(case when rental_id is null then 1 end) total_nulas,
+round(count(rental_id)*100.0/count(*),2) porcentaje_no_nulo,
+count (distinct rental_id) valores_distintos
 from payment;
 
 
