@@ -13,12 +13,12 @@ except ModuleNotFoundError as exc:
     ) from exc
 
 
-FILM_COUNT = 5_000
+FILM_COUNT = 3000
 OUTPUT_FILE = "pagila-faker-test.sql"
-INVENTORY_COUNT = 8_000
-CUSTOMER_COUNT = 7_000
-RENTAL_COUNT = 30_000
-ACTOR_COUNT = 400
+INVENTORY_COUNT = 6000
+CUSTOMER_COUNT = 5000
+RENTAL_COUNT = 15_000
+ACTOR_COUNT = 200
 STAFF_COUNT = 12
 STORE_COUNT = 4
 COUNTRY_COUNT = 35
@@ -47,6 +47,7 @@ CATEGORY_NAMES = [
 ]
 MAIN_LANGUAGE_CODES = ("en", "es", "fr", "de", "it", "pt")
 PAYMENT_METHODS = ("Billetera Virtual", "Efectivo", "Debito", "Credito")
+EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "example.com"]
 
 
 fake = Faker("es_AR")
@@ -59,6 +60,19 @@ def sql_text(value: object) -> str:
         return "NULL"
     text = str(value).replace("\\", "\\\\").replace("'", "''")
     return f"'{text}'"
+
+def generate_email(first_name: str, last_name: str, used_emails: set) -> str:
+    clean_first = "".join(filter(str.isalpha, first_name.lower()))
+    clean_last = "".join(filter(str.isalpha, last_name.lower()))
+    
+    email = f"{clean_first}.{clean_last}@{random.choice(EMAIL_DOMAINS)}"
+    
+    # Si existe, intentar añadir números
+    while email in used_emails:
+        email = f"{clean_first}{clean_last}{random.randint(1, 999)}@{random.choice(EMAIL_DOMAINS)}"
+    
+    used_emails.add(email)
+    return email
 
 
 def sql_bool(value: bool) -> str:
@@ -131,7 +145,7 @@ def load_countries(path: str) -> list[dict[str, str]]:
             f"se necesitan {COUNTRY_COUNT}."
         )
 
-    return countries[:COUNTRY_COUNT]
+    return countries
 
 
 def make_countries(source_rows: list[dict[str, str]]):
@@ -164,7 +178,11 @@ def main() -> None:
     languages = load_languages("language-codes.csv")
     film_languages = main_languages(languages)
     source_countries = load_countries("maestra_paises.csv")
-    country_ids = [int(row["country-code"]) for row in source_countries]
+    generated_country_ids = [
+        int(row["country-code"])
+        for row in source_countries
+        if row["region-code"].strip() and row["region"].strip()
+    ][:COUNTRY_COUNT]
     city_ids = list(range(1, CITY_COUNT + 1))
     address_count = CUSTOMER_COUNT + STAFF_COUNT + STORE_COUNT
     address_ids = list(range(1, address_count + 1))
@@ -172,6 +190,7 @@ def main() -> None:
     customer_address_ids = address_ids[:CUSTOMER_COUNT]
     staff_address_ids = address_ids[CUSTOMER_COUNT : CUSTOMER_COUNT + STAFF_COUNT]
     store_address_ids = address_ids[CUSTOMER_COUNT + STAFF_COUNT :]
+    used_emails = set()
 
     with open(output, "w", encoding="utf-8", newline="\n") as handle:
         handle.write("-- Datos generados por generar_pagila_faker.py para pagila-schema.sql\n")
@@ -207,7 +226,7 @@ def main() -> None:
                 (
                     str(city_id),
                     sql_text(fake.city()[:50]),
-                    str(random.choice(country_ids)),
+                    str(random.choice(generated_country_ids)),
                 )
                 for city_id in city_ids
             ),
@@ -246,48 +265,35 @@ def main() -> None:
             ),
         )
 
-        write_insert(
-            handle,
-            "staff",
-            (
-                "staff_id",
-                "first_name",
-                "last_name",
-                "email",
-                "active",
-                "username",
-                "password",
-                "picture",
-                "address_id",
-                "store_id",
-            ),
-            (
-                (
-                    str(staff_id),
-                    sql_text(fake.first_name()[:30]),
-                    sql_text(fake.last_name()[:30]),
-                    sql_text(fake.unique.email()[:60]),
-                    sql_bool(True),
-                    sql_text(f"staff{staff_id:02d}"),
-                    sql_text(fake.password(length=18)[:70]),
-                    "NULL",
-                    str(staff_address_ids[staff_id - 1]),
-                    str(((staff_id - 1) % STORE_COUNT) + 1),
-                )
-                for staff_id in range(1, STAFF_COUNT + 1)
-            ),
-        )
+        staff_rows = []
+        for staff_id in range(1, STAFF_COUNT + 1):
+            first = fake.first_name()
+            last = fake.last_name()
+            email = generate_email(first, last, used_emails)
+            
+            staff_rows.append((
+                str(staff_id),
+                sql_text(first[:30]),
+                sql_text(last[:30]),
+                sql_text(email[:60]),
+                sql_bool(True),
+                sql_text(f"staff{staff_id:02d}"),
+                sql_text(fake.password(length=18)[:70]),
+                "NULL",
+                str(staff_address_ids[staff_id - 1]),
+                str(((staff_id - 1) % STORE_COUNT) + 1),
+            ))
 
         write_insert(
             handle,
             "store",
-            ("store_id", "address_id","email", "manager_id"),
+            ("store_id", "address_id", "email", "manager_id"),
             (
                 (
                     str(store_id),
                     str(store_address_ids[store_id - 1]),
                     sql_text(fake.unique.email()[:60]),
-                    str(((store_id - 1) % STAFF_COUNT) + 1),
+                    "NULL",
                 )
                 for store_id in range(1, STORE_COUNT + 1)
             ),
@@ -295,20 +301,38 @@ def main() -> None:
 
         write_insert(
             handle,
-            "customer",
-            ("customer_id", "first_name", "last_name", "email", "active", "address_id"),
+            "staff",
             (
-                (
-                    str(customer_id),
-                    sql_text(fake.first_name()[:30]),
-                    sql_text(fake.last_name()[:30]),
-                    sql_text(fake.unique.email()[:60]),
-                    sql_bool(random.random() > 0.04),
-                    str(customer_address_ids[customer_id - 1]),
-                )
-                for customer_id in range(1, CUSTOMER_COUNT + 1)
+                "staff_id", "first_name", "last_name", "email", "active", 
+                "username", "password", "picture", "address_id", "store_id",
             ),
+            staff_rows,
         )
+
+        for store_id in range(1, STORE_COUNT + 1):
+            manager_id = ((store_id - 1) % STAFF_COUNT) + 1
+            handle.write(
+                f"UPDATE public.store SET manager_id = {manager_id} "
+                f"WHERE store_id = {store_id};\n"
+            )
+        handle.write("\n")
+
+        customer_rows = []
+        for customer_id in range(1, CUSTOMER_COUNT + 1):
+                    first = fake.first_name()
+                    last = fake.last_name()
+                    customer_rows.append((
+                        str(customer_id),
+                        sql_text(first[:30]),
+                        sql_text(last[:30]),
+                        sql_text(generate_email(first, last, used_emails)[:60]),
+                        sql_bool(random.random() > 0.04),
+                        str(customer_address_ids[customer_id - 1]),
+                    ))
+                
+        write_insert(handle, "customer", 
+                     ("customer_id","first_name","last_name","email","active","address_id")
+                     , customer_rows)
 
         write_insert(
             handle,
@@ -379,19 +403,24 @@ def main() -> None:
 
         inventory_rows = []
         inventory_prices: dict[int, Decimal] = {}
+        film_store_prices: dict[tuple[int, int], Decimal] = {}
         inventory_by_store: dict[int, list[int]] = {
             store_id: [] for store_id in range(1, STORE_COUNT + 1)
         }
         for inventory_id in range(1, INVENTORY_COUNT + 1):
-            unit_price = money("2.99", "29.99")
             store_id = random.randint(1, STORE_COUNT)
+            film_id = random.randint(1, FILM_COUNT)
+            unit_price = film_store_prices.setdefault(
+                (film_id, store_id),
+                money("2.99", "29.99"),
+            )
             inventory_prices[inventory_id] = unit_price
             inventory_by_store[store_id].append(inventory_id)
             inventory_rows.append(
                 (
                     str(inventory_id),
                     f"{unit_price:.2f}",
-                    str(random.randint(1, FILM_COUNT)),
+                    str(film_id),
                     str(store_id),
                 )
             )
@@ -403,10 +432,18 @@ def main() -> None:
             inventory_rows,
         )
 
-        payment_rows = []
         rental_rows = []
         rental_inventory_rows = []
+        payment_rows = []
         start_date = datetime(2023, 1, 1, 9, 0, 0)
+        rental_dates = sorted(
+            start_date + timedelta(minutes=random.randint(0, 60 * 24 * 365 * 3))
+            for _ in range(RENTAL_COUNT)
+        )
+        inventory_available_at = {
+            inventory_id: start_date
+            for inventory_id in range(1, INVENTORY_COUNT + 1)
+        }
         write_insert(
             handle,
             "pay_method",
@@ -417,18 +454,28 @@ def main() -> None:
             ),
         )
 
-        for rental_id in range(1, RENTAL_COUNT + 1):
+        for rental_id, rental_date in enumerate(rental_dates, start=1):
             customer_id = random.randint(1, CUSTOMER_COUNT)
             staff_id = random.randint(1, STAFF_COUNT)
             store_id = ((staff_id - 1) % STORE_COUNT) + 1
-            rental_date = start_date + timedelta(
-                minutes=random.randint(0, 60 * 24 * 365 * 3) # 2023 a 2026
-            )
             return_date = rental_date + timedelta(days=random.randint(1, 14))
+            available_inventory_ids = [
+                inventory_id
+                for inventory_id in inventory_by_store[store_id]
+                if inventory_available_at[inventory_id] <= rental_date
+            ]
+            item_count = min(random.randint(1, 5), len(available_inventory_ids))
+            if item_count == 0:
+                raise RuntimeError(
+                    f"No hay inventario disponible en la tienda {store_id} "
+                    f"para la renta {rental_id}."
+                )
             rented_inventory_ids = random.sample(
-                inventory_by_store[store_id],
-                random.randint(1, 5),
+                available_inventory_ids,
+                item_count,
             )
+            for inventory_id in rented_inventory_ids:
+                inventory_available_at[inventory_id] = return_date
             amount = sum(
                 (inventory_prices[inventory_id] for inventory_id in rented_inventory_ids),
                 Decimal("0.00"),
@@ -440,7 +487,6 @@ def main() -> None:
                     sql_ts(rental_date),
                     sql_ts(return_date),
                     str(customer_id),
-                    str(rental_id),
                     str(staff_id),
                 )
             )
@@ -452,16 +498,17 @@ def main() -> None:
                 (
                     str(rental_id),
                     f"{amount:.2f}",
-                    sql_ts(rental_date + timedelta(minutes=random.randint(0, 90))),
+                    sql_ts(rental_date),
                     str(staff_id),
                     str(random.randint(1, len(PAYMENT_METHODS))),
+                    str(rental_id),
                 )
             )
 
         write_insert(
             handle,
             "rental",
-            ("rental_id", "rental_date", "return_date", "customer_id", "payment_id", "staff_id"),
+            ("rental_id", "rental_date", "return_date", "customer_id", "staff_id"),
             rental_rows,
         )
 
@@ -475,7 +522,7 @@ def main() -> None:
         write_insert(
             handle,
             "payment",
-            ("payment_id", "amount", "payment_date", "staff_id", "pay_method_id"),
+            ("payment_id", "amount", "payment_date", "staff_id", "pay_method_id", "rental_id"),
             payment_rows,
         )
 

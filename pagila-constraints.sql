@@ -1,0 +1,2 @@
+-- Las reglas de negocio, funciones y triggers fueron integrados en pagila-schema.sql.
+-- Este archivo se conserva como referencia y no ejecuta DDL.
