@@ -59,13 +59,6 @@ CREATE TABLE public.language (
     name text NOT NULL
 );
 
--- ACTOR
-CREATE TABLE public.actor (
-    actor_id SERIAL PRIMARY KEY, 
-    first_name varchar(30) NOT NULL,
-    last_name varchar(30) NOT NULL
-);
-
 -- FILM
 CREATE TABLE public.film (
     film_id SERIAL PRIMARY KEY,
