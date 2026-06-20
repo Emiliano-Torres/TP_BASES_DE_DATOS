@@ -43,7 +43,7 @@ CREATE TABLE public.film (
     description text,
     release_year INT,
     length_minutes INT,
-    language_id varchar(2) NOT NULL
+    language_id varchar(2) NOT NULL,
     CONSTRAINT film_length_positive CHECK (length_minutes IS NULL OR length_minutes > 0)
 );
 
