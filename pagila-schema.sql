@@ -101,7 +101,7 @@ CREATE TABLE public.rental (
     customer_id INT NOT NULL,
     payment_id INT NOT NULL,
     staff_id INT NOT NULL,
-    CONSTRAINT rental_dates_coherent CHECK (return_date IS NULL OR return_date > rental_date)
+    CONSTRAINT rental_dates_coherent CHECK (return_date > rental_date)
 );
 
 -- ADDRESS
