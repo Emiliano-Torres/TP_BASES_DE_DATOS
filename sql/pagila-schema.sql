@@ -99,7 +99,7 @@ CREATE TABLE public.pay_method (
 CREATE TABLE public.rental (
     rental_id SERIAL PRIMARY KEY,
     rental_date timestamp NOT NULL,
-    return_date timestamp NOT NULL,
+    return_date timestamp ,
     customer_id INT NOT NULL,
     staff_id INT NOT NULL,
     CONSTRAINT rental_dates_coherent CHECK (return_date IS NULL OR return_date > rental_date)
