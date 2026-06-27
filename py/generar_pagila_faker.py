@@ -4,6 +4,7 @@ import csv
 import random
 from datetime import datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 try:
     from faker import Faker
@@ -13,13 +14,12 @@ except ModuleNotFoundError as exc:
     ) from exc
 
 
-FILM_COUNT = 3000
+FILM_COUNT = 800
 OUTPUT_FILE = "pagila-faker-test.sql"
 INVENTORY_COUNT = 6000
 CUSTOMER_COUNT = 5000
-RENTAL_COUNT = 15_000
+RENTAL_COUNT = 30_000
 ACTOR_COUNT = 200
-STAFF_COUNT = 12
 STORE_COUNT = 4
 COUNTRY_COUNT = 35
 CITY_COUNT = 250
@@ -48,6 +48,7 @@ CATEGORY_NAMES = [
 MAIN_LANGUAGE_CODES = ("en", "es", "fr", "de", "it", "pt")
 PAYMENT_METHODS = ("Billetera Virtual", "Efectivo", "Debito", "Credito")
 EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "example.com"]
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 fake = Faker("es_AR")
@@ -175,21 +176,20 @@ def make_regions(source_rows: list[dict[str, str]]):
 
 def main() -> None:
     output = OUTPUT_FILE
-    languages = load_languages("language-codes.csv")
+    languages = load_languages(str(BASE_DIR / "csv" / "language-codes.csv"))
     film_languages = main_languages(languages)
-    source_countries = load_countries("maestra_paises.csv")
+    source_countries = load_countries(str(BASE_DIR / "csv" / "maestra_paises.csv"))
     generated_country_ids = [
         int(row["country-code"])
         for row in source_countries
         if row["region-code"].strip() and row["region"].strip()
     ][:COUNTRY_COUNT]
     city_ids = list(range(1, CITY_COUNT + 1))
-    address_count = CUSTOMER_COUNT + STAFF_COUNT + STORE_COUNT
+    address_count = CUSTOMER_COUNT + STORE_COUNT
     address_ids = list(range(1, address_count + 1))
     street_ids = list(range(1, address_count + 1))
     customer_address_ids = address_ids[:CUSTOMER_COUNT]
-    staff_address_ids = address_ids[CUSTOMER_COUNT : CUSTOMER_COUNT + STAFF_COUNT]
-    store_address_ids = address_ids[CUSTOMER_COUNT + STAFF_COUNT :]
+    store_address_ids = address_ids[CUSTOMER_COUNT :]
     used_emails = set()
 
     with open(output, "w", encoding="utf-8", newline="\n") as handle:
@@ -265,70 +265,32 @@ def main() -> None:
             ),
         )
 
-        staff_rows = []
-        for staff_id in range(1, STAFF_COUNT + 1):
-            first = fake.first_name()
-            last = fake.last_name()
-            email = generate_email(first, last, used_emails)
-            
-            staff_rows.append((
-                str(staff_id),
-                sql_text(first[:30]),
-                sql_text(last[:30]),
-                sql_text(email[:60]),
-                sql_bool(True),
-                sql_text(f"staff{staff_id:02d}"),
-                sql_text(fake.password(length=18)[:70]),
-                "NULL",
-                str(staff_address_ids[staff_id - 1]),
-                str(((staff_id - 1) % STORE_COUNT) + 1),
-            ))
-
         write_insert(
             handle,
             "store",
-            ("store_id", "address_id", "email", "manager_id"),
+            ("store_id", "address_id", "email"),
             (
                 (
                     str(store_id),
                     str(store_address_ids[store_id - 1]),
                     sql_text(fake.unique.email()[:60]),
-                    "NULL",
                 )
                 for store_id in range(1, STORE_COUNT + 1)
             ),
         )
 
-        write_insert(
-            handle,
-            "staff",
-            (
-                "staff_id", "first_name", "last_name", "email", "active", 
-                "username", "password", "picture", "address_id", "store_id",
-            ),
-            staff_rows,
-        )
-
-        for store_id in range(1, STORE_COUNT + 1):
-            manager_id = ((store_id - 1) % STAFF_COUNT) + 1
-            handle.write(
-                f"UPDATE public.store SET manager_id = {manager_id} "
-                f"WHERE store_id = {store_id};\n"
-            )
-        handle.write("\n")
-
         customer_rows = []
         for customer_id in range(1, CUSTOMER_COUNT + 1):
-                    first = fake.first_name()
-                    last = fake.last_name()
-                    customer_rows.append((
-                        str(customer_id),
-                        sql_text(first[:30]),
-                        sql_text(last[:30]),
-                        sql_text(generate_email(first, last, used_emails)[:60]),
-                        sql_bool(random.random() > 0.04),
-                        str(customer_address_ids[customer_id - 1]),
-                    ))
+            first = fake.first_name()
+            last = fake.last_name()
+            customer_rows.append((
+                str(customer_id),
+                sql_text(first[:30]),
+                sql_text(last[:30]),
+                sql_text(generate_email(first, last, used_emails)[:60]),
+                sql_bool(random.random() > 0.04),
+                str(customer_address_ids[customer_id - 1]),
+            ))
                 
         write_insert(handle, "customer", 
                      ("customer_id","first_name","last_name","email","active","address_id")
@@ -456,20 +418,27 @@ def main() -> None:
 
         for rental_id, rental_date in enumerate(rental_dates, start=1):
             customer_id = random.randint(1, CUSTOMER_COUNT)
-            staff_id = random.randint(1, STAFF_COUNT)
-            store_id = ((staff_id - 1) % STORE_COUNT) + 1
             return_date = rental_date + timedelta(days=random.randint(1, 14))
-            available_inventory_ids = [
-                inventory_id
-                for inventory_id in inventory_by_store[store_id]
-                if inventory_available_at[inventory_id] <= rental_date
+            available_by_store = {
+                store_id: [
+                    inventory_id
+                    for inventory_id in inventory_by_store[store_id]
+                    if inventory_available_at[inventory_id] <= rental_date
+                ]
+                for store_id in range(1, STORE_COUNT + 1)
+            }
+            stores_with_inventory = [
+                store_id
+                for store_id, available_ids in available_by_store.items()
+                if available_ids
             ]
-            item_count = min(random.randint(1, 5), len(available_inventory_ids))
-            if item_count == 0:
+            if not stores_with_inventory:
                 raise RuntimeError(
-                    f"No hay inventario disponible en la tienda {store_id} "
-                    f"para la renta {rental_id}."
+                    f"No hay inventario disponible para la renta {rental_id}."
                 )
+            store_id = random.choice(stores_with_inventory)
+            available_inventory_ids = available_by_store[store_id]
+            item_count = min(random.randint(1, 5), len(available_inventory_ids))
             rented_inventory_ids = random.sample(
                 available_inventory_ids,
                 item_count,
@@ -487,7 +456,6 @@ def main() -> None:
                     sql_ts(rental_date),
                     sql_ts(return_date),
                     str(customer_id),
-                    str(staff_id),
                 )
             )
             rental_inventory_rows.extend(
@@ -499,7 +467,6 @@ def main() -> None:
                     str(rental_id),
                     f"{amount:.2f}",
                     sql_ts(rental_date),
-                    str(staff_id),
                     str(random.randint(1, len(PAYMENT_METHODS))),
                     str(rental_id),
                 )
@@ -508,7 +475,7 @@ def main() -> None:
         write_insert(
             handle,
             "rental",
-            ("rental_id", "rental_date", "return_date", "customer_id", "staff_id"),
+            ("rental_id", "rental_date", "return_date", "customer_id"),
             rental_rows,
         )
 
@@ -522,7 +489,7 @@ def main() -> None:
         write_insert(
             handle,
             "payment",
-            ("payment_id", "amount", "payment_date", "staff_id", "pay_method_id", "rental_id"),
+            ("payment_id", "amount", "payment_date", "pay_method_id", "rental_id"),
             payment_rows,
         )
 
@@ -530,7 +497,6 @@ def main() -> None:
             ("city", "city_id", CITY_COUNT),
             ("street", "street_id", address_count),
             ("address", "address_id", address_count),
-            ("staff", "staff_id", STAFF_COUNT),
             ("store", "store_id", STORE_COUNT),
             ("customer", "customer_id", CUSTOMER_COUNT),
             ("category", "category_id", len(CATEGORY_NAMES)),

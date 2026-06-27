@@ -1,4 +1,11 @@
 /*******************************************************************************
+   Reiniciamos el schema public
+********************************************************************************/
+
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+
+/*******************************************************************************
    Creamos Tablas (entidades, atributos, primary keys, restricciones de dominio)
 ********************************************************************************/
 
@@ -11,22 +18,6 @@ CREATE TABLE public.customer (
     active boolean DEFAULT true NOT NULL,
     address_id INT NOT NULL,
     CONSTRAINT customer_email_format CHECK (email IS NULL OR email LIKE '%@%.%')
-);
-
--- STAFF
-CREATE TABLE public.staff (
-    staff_id SERIAL PRIMARY KEY,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    email VARCHAR(60),
-    active boolean DEFAULT true NOT NULL,
-    username VARCHAR(30), 
-    password VARCHAR(70),
-    picture bytea,
-    address_id INT NOT NULL,
-    store_id INT NOT NULL,
-    CONSTRAINT staff_email_format    CHECK (email    IS NULL OR email    LIKE '%@%.%'),
-    CONSTRAINT staff_username_unique UNIQUE (username)
 );
 
 -- ACTOR
@@ -64,7 +55,6 @@ CREATE TABLE public.language (
 CREATE TABLE public.store (
     store_id SERIAL PRIMARY KEY,
     address_id INT NOT NULL,
-    manager_id INT,
     email VARCHAR(60),
     CONSTRAINT store_email_format CHECK (email IS NULL OR email LIKE '%@%.%')
 );
@@ -83,7 +73,6 @@ CREATE TABLE public.payment (
     payment_id SERIAL PRIMARY KEY,
     amount numeric(10,2) NOT NULL,
     payment_date timestamp NOT NULL,
-    staff_id INT NOT NULL,
     pay_method_id INT NOT NULL,
     rental_id INT NOT NULL, 
     CONSTRAINT payment_amount_not_negative CHECK (amount >= 0)
@@ -101,7 +90,6 @@ CREATE TABLE public.rental (
     rental_date timestamp NOT NULL,
     return_date timestamp ,
     customer_id INT NOT NULL,
-    staff_id INT NOT NULL,
     CONSTRAINT rental_dates_coherent CHECK (return_date IS NULL OR return_date > rental_date)
 );
 
@@ -136,7 +124,6 @@ CREATE TABLE public.country (
     alpha_2 character(2),
     alpha_3 character(3),
     region_code INT NOT NULL
-
 );
 
 -- REGION
@@ -187,25 +174,18 @@ ALTER TABLE rental_inventory ADD CONSTRAINT rental_inventory_rental_id_fkey FORE
 ALTER TABLE customer ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
 
 -- RENTAL
-ALTER TABLE rental ADD CONSTRAINT rental_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
 ALTER TABLE rental ADD CONSTRAINT rental_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id);
 
 -- INVENTORY
 ALTER TABLE inventory ADD CONSTRAINT inventory_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
 ALTER TABLE inventory ADD CONSTRAINT inventory_film_id_fkey FOREIGN KEY (film_id) REFERENCES film (film_id);
 
--- STAFF
-ALTER TABLE staff ADD CONSTRAINT staff_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-ALTER TABLE staff ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store (store_id);
-
 -- PAYMENT
-ALTER TABLE payment ADD CONSTRAINT payment_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES staff (staff_id);
 ALTER TABLE payment ADD CONSTRAINT payment_method_id_fkey FOREIGN KEY (pay_method_id) REFERENCES pay_method (pay_method_id);
 ALTER TABLE payment ADD CONSTRAINT payment_rental_id_fkey FOREIGN KEY (rental_id) REFERENCES rental (rental_id);
 
 -- STORE
 ALTER TABLE store ADD CONSTRAINT store_address_id_fkey FOREIGN KEY (address_id) REFERENCES address (address_id);
-ALTER TABLE store ADD CONSTRAINT store_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES staff (staff_id);
 
 -- ADDRESS
 ALTER TABLE address ADD CONSTRAINT address_street_id_fkey FOREIGN KEY (street_id) REFERENCES street (street_id);
@@ -308,41 +288,35 @@ BEFORE INSERT OR UPDATE ON public.inventory
 FOR EACH ROW EXECUTE FUNCTION public.fn_check_inventory_price_consistency();
 
 
-/** 
+/**
 REGLA 3: El payment_date debe ser igual al rental_date de su renta asociada.
-- Se controla al insertar/actualizar un registro en la tabla payment.
+Se controla al insertar/actualizar un registro en la tabla payment.
 **/
-
 CREATE OR REPLACE FUNCTION public.fn_check_payment_date()
 RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
 DECLARE
     v_rental_date TIMESTAMP;
-    v_return_date TIMESTAMP;
 BEGIN
-    -- Obtenemos las fechas del rental asociado
-    SELECT rental_date, return_date
-      INTO v_rental_date, v_return_date
+    -- Obtenemos el rental_date del rental asociado
+    SELECT rental_date
+      INTO v_rental_date
       FROM public.rental
      WHERE rental_id = NEW.rental_id;
 
-    -- Validamos que el payment_date esté estrictamente dentro del rango [rental, return]
-    IF NEW.payment_date < v_rental_date OR NEW.payment_date > v_return_date THEN
+    -- Validamos que el payment_date sea igual al rental_date
+    IF NEW.payment_date <> v_rental_date THEN
         RAISE EXCEPTION
-            'El payment_date (%) del payment con id (%) debe estar comprendido entre el rental_date (%) y el return_date (%) del rental asociado.',
-            NEW.payment_date, NEW.payment_id, v_rental_date, v_return_date;
+            'El payment_date (%) del payment con id (%) debe ser igual al rental_date (%) del rental asociado.',
+            NEW.payment_date, NEW.payment_id, v_rental_date;
     END IF;
-
     RETURN NEW;
 END;
 $$;
-
 CREATE OR REPLACE TRIGGER trg_check_payment_date
 BEFORE INSERT OR UPDATE ON public.payment
 FOR EACH ROW EXECUTE FUNCTION public.fn_check_payment_date();
-
-
 /** 
 REGLA 4: El amount del payment debe ser igual a la suma de los unit_price de todos los ítems del inventario de la renta asociada.
 - Se controla al insertar/actualizar/borrar un registro en rental_inventory y al insertar/actualizar payment.
