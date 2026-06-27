@@ -3,7 +3,6 @@
 ********************************************************************************/
 
 -- Participación total de RENTAL en relación GENERATES con PAYMENT
-
 SELECT COUNT(*) as sin_pago_asociado FROM RENTAL r
 LEFT JOIN PAYMENT p ON r.rental_id = p.rental_id
 WHERE p.payment_id is NULL;
