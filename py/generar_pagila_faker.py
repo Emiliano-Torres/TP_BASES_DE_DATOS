@@ -15,7 +15,9 @@ except ModuleNotFoundError as exc:
 
 
 FILM_COUNT = 800
-OUTPUT_FILE = "pagila-faker-test.sql"
+BASE_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_FILE = BASE_DIR / "sql" / "pagila-faker-test.sql"
+
 INVENTORY_COUNT = 6000
 CUSTOMER_COUNT = 5000
 RENTAL_COUNT = 30_000
@@ -48,7 +50,7 @@ CATEGORY_NAMES = [
 MAIN_LANGUAGE_CODES = ("en", "es", "fr", "de", "it", "pt")
 PAYMENT_METHODS = ("Billetera Virtual", "Efectivo", "Debito", "Credito")
 EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "example.com"]
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 fake = Faker("es_AR")

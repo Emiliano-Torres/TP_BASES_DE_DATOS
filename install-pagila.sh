@@ -41,7 +41,7 @@ done
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 schema_path="$script_dir/sql/pagila-schema.sql"
-data_path="$script_dir/pagila-faker-test.sql"
+data_path="$script_dir/sql/pagila-faker-test.sql"
 
 if [ ! -f "$schema_path" ]; then
     echo "No se encontro el schema en: $schema_path" >&2

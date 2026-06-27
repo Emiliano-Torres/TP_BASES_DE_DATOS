@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $schemaPath = Join-Path $scriptDir "sql\pagila-schema.sql"
-$dataPath = Join-Path $scriptDir "pagila-faker-test.sql"
+$dataPath = Join-Path $scriptDir "sql\pagila-faker-test.sql"
 
 if (-not (Test-Path $schemaPath)) {
     Write-Host "No se encontro el schema en: $schemaPath" -ForegroundColor Red
