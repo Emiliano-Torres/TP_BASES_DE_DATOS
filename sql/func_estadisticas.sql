@@ -51,31 +51,59 @@ outliers.
 
 Consideramos que un valor es outlier cuando se encuentra fuera del intervalo
 [media-2*desvioestandar, media+2*desvioestandar] 
-Realizamos el análisis sólo de la columna amount ya que el resto son claves
-y fechas cuyas métricas carecen de sentido.
+Realizamos el análisis sólo de la columna amount y las fecha de payment ya que el resto son claves
+cuyas métricas carecen de sentido.
 Utilizamos CTE para mantener la claridad de la consulta. */
+WITH rango AS (
+    SELECT 
+        round((avg(amount) - 2 * stddev_pop(amount))::numeric, 4) AS lim_inf,
+        round((avg(amount) + 2 * stddev_pop(amount))::numeric, 4) AS lim_sup
+    FROM payment
+),
+outlier AS (
+    SELECT amount
+    FROM payment
+    WHERE amount < (SELECT lim_inf FROM rango)
+       OR amount > (SELECT lim_sup FROM rango)
+)
+SELECT 
+    'amount' AS columna,
+    count(amount)::text AS cant_registros,
+    round(stddev_pop(amount)::numeric, 4)::text AS desvio_est,
+    min(amount)::text AS minimo,
+    (percentile_cont(0.05) WITHIN GROUP (ORDER BY amount))::text AS p05,
+    (percentile_cont(0.25) WITHIN GROUP (ORDER BY amount))::text AS primer_cuartil,
+    (percentile_cont(0.50) WITHIN GROUP (ORDER BY amount))::text AS mediana,
+    round(avg(amount)::numeric, 3)::text AS promedio,
+    (percentile_cont(0.75) WITHIN GROUP (ORDER BY amount))::text AS tercer_cuartil,
+    (percentile_cont(0.95) WITHIN GROUP (ORDER BY amount))::text AS p95,
+    max(amount)::text AS maximo,
+    sum(CASE WHEN amount = 0 THEN 1 ELSE 0 END)::text AS cant_ceros,
+    round(100.0 * sum(CASE WHEN amount = 0 THEN 1 ELSE 0 END) / count(amount),4)::text AS porcentaje_ceros,
+    sum(CASE WHEN amount < 0 THEN 1 ELSE 0 END)::text AS cant_negativos,
+    round(100.0 * sum(CASE WHEN amount < 0 THEN 1 ELSE 0 END) / count(amount),4)::text AS porcentaje_negativos,
+    sum(CASE WHEN amount IN (SELECT o.amount FROM outlier o) THEN 1 ELSE 0 END)::text AS cant_outliers
+FROM payment
+UNION ALL
+SELECT 
+    'payment_date' AS columna,
+    count(payment_date)::text AS cant_registros,
+    'No aplica' AS desvio_est,
+    min(payment_date)::text AS minimo,
+    (percentile_disc(0.05) WITHIN GROUP (ORDER BY payment_date))::text AS p05,
+    (percentile_disc(0.25) WITHIN GROUP (ORDER BY payment_date))::text AS primer_cuartil,
+    (percentile_disc(0.50) WITHIN GROUP (ORDER BY payment_date))::text AS mediana,
+    'No aplica' AS promedio,
+    (percentile_disc(0.75) WITHIN GROUP (ORDER BY payment_date))::text AS tercer_cuartil,
+    (percentile_disc(0.95) WITHIN GROUP (ORDER BY payment_date))::text AS p95,
+    max(payment_date)::text AS maximo,
+    'No aplica' AS cant_ceros,
+    'No aplica' AS porcentaje_ceros,
+    'No aplica' AS cant_negativos,
+    'No aplica' AS porcentaje_negativos,
+    'No aplica' AS cant_outliers
+FROM payment;
 
-WITH RANGO AS (select round(avg(amount)-2*stddev_pop(amount),4)lim_inf,
-round(avg(amount)+2*stddev_pop(amount),4) lim_sup from payment),
-OUTLIER as(select amount from payment 
-where amount<(select lim_inf from RANGO)  or amount>(select lim_sup from RANGO))
-select 'amount' columna,
-count(amount) cant_Registros,
-round(stddev_pop(amount),4) desvio_est,
-min(amount) minimo,
-percentile_cont(0.05) within group (order by amount) P05,
-percentile_cont(0.25) within group (order by amount) primer_cuartil,
-percentile_cont(0.5) within group (order by amount) mediana,
-round(avg(amount),3) promedio,
-percentile_cont(0.75) within group (order by amount) tercer_cuartil,
-percentile_cont(0.95) within group (order by amount) P95,
-max(amount) maximo,
-sum(case when amount=0 then 1 else 0 end) cant_ceros,
-round(100.0*(sum(case when amount=0 then 1 else 0 end))/count(amount),4) porcentaje_ceros,
-sum(case when amount<0 then 1 else 0 end) cant_negativos,
-round(100.0*(sum(case when amount<0 then 1 else 0 end))/count(amount),4) porcentaje_negativos,
-sum(case when amount in (select o.amount from OUTLIER o) then 1 else 0 end) cant_outliers
-from payment;
 
 /* C3: Para cada columna considerada categórica: la frecuencia y el porcentaje
 de los hasta 10 valores más frecuentes (de mayor a menor frecuencia),

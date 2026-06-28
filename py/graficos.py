@@ -9,13 +9,23 @@ engine = create_engine(
 
 ## datos media movil
 datos_media_movil = pd.read_sql("""
-WITH ventas_por_dia AS (SELECT DATE(payment_date) fecha, SUM(amount) monto 
-FROM payment p INNER JOIN staff s ON p.staff_id = s.staff_id AND s.store_id=2 GROUP BY DATE(payment_date) ORDER BY DATE(payment_date))
+WITH ventas_por_dia AS (
+SELECT DATE(payment_date) fecha, SUM(amount) monto 
+FROM payment p 
+INNER JOIN rental r ON r.rental_id=p.payment_id
+INNER JOIN rental_inventory ri ON ri.rental_id = r.rental_id
+INNER JOIN inventory i ON ri.inventory_id = i.inventory_id AND store_id=2
+GROUP BY DATE(payment_date))
 SELECT fecha, ROUND(AVG(monto) OVER (ORDER BY fecha ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),2) media_movil
-FROM ventas_por_dia ORDER BY fecha;""", engine)
+FROM ventas_por_dia ORDER BY fecha;
+""", engine)
 
 datos= pd.read_sql("""SELECT DATE(payment_date) fecha, SUM(amount) monto 
-                   FROM payment p INNER JOIN staff s ON p.staff_id = s.staff_id AND s.store_id=2 GROUP BY DATE(payment_date) ORDER BY DATE(payment_date)""", engine)
+FROM payment p 
+INNER JOIN rental r ON r.rental_id=p.payment_id
+INNER JOIN rental_inventory ri ON ri.rental_id = r.rental_id
+INNER JOIN inventory i ON ri.inventory_id = i.inventory_id AND store_id=2
+GROUP BY DATE(payment_date) ORDER BY DATE(payment_date);""", engine)
 
 plt.figure(figsize=(12,6))
 
