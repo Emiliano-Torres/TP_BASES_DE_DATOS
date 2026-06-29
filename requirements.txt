@@ -4,6 +4,6 @@ matplotlib
 pandas
 psycopg2-binary
 pyspark
-qrcode[pil]
+qrcode
 redis
 SQLAlchemy
