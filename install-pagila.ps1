@@ -1,7 +1,8 @@
 param(
     [string]$Container = "ibd_postgres_db",
     [string]$User = "ibd_postgres",
-    [string]$Db = "pagila"
+    [string]$Db = "pagila",
+    [string]$MaintenanceDb = "ibd_postgres"
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +47,41 @@ Invoke-Checked -Message "Copiando datos al contenedor..." -Command "docker" -Arg
     $dataPath,
     "${Container}:/pagila-faker-test.sql"
 )
+
+Write-Host "Verificando database $Db..." -ForegroundColor Cyan
+$dbExists = & docker @(
+    "exec",
+    "-i",
+    $Container,
+    "psql",
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-U",
+    $User,
+    "-d",
+    $MaintenanceDb,
+    "-tAc",
+    "SELECT 1 FROM pg_database WHERE datname = '$Db'"
+)
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+if (($dbExists | Out-String).Trim() -eq "1") {
+    Write-Host "La database $Db ya existe." -ForegroundColor Green
+} else {
+    Invoke-Checked -Message "Creando database $Db..." -Command "docker" -Arguments @(
+        "exec",
+        "-i",
+        $Container,
+        "createdb",
+        "-U",
+        $User,
+        "--maintenance-db=$MaintenanceDb",
+        $Db
+    )
+    Write-Host "Database $Db creada correctamente." -ForegroundColor Green
+}
 
 Invoke-Checked -Message "Recreando schema y creando tablas..." -Command "docker" -Arguments @(
     "exec",

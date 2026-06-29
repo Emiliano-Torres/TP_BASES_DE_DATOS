@@ -1,1 +1,9 @@
 Faker
+ipython
+matplotlib
+pandas
+psycopg2-binary
+pyspark
+qrcode[pil]
+redis
+SQLAlchemy
